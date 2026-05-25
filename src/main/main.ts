@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import path from 'node:path'
 import started from 'electron-squirrel-startup'
+import { settings } from '../shared'
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -8,6 +9,8 @@ if (started) {
 }
 
 let mainWindow: BrowserWindow | null = null
+let settingsWindow: BrowserWindow | null = null
+
 
 const createWindow = () => {
   // Create the browser window.
@@ -33,7 +36,7 @@ const createWindow = () => {
 }
 
 const createsettingsWindow = () => {
-  const settingsWindow = new BrowserWindow({
+  settingsWindow = new BrowserWindow({
     width: 600,
     height: 500,
     title: '设置',
@@ -43,16 +46,42 @@ const createsettingsWindow = () => {
   })
 
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    settingsWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}/pages/child.html`)
+    settingsWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}/pages/settings.html`)
   } else {
     settingsWindow.loadFile(
-      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/pages/child.html`),
+      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/pages/settings.html`),
     )
   }
+
+  settingsWindow.on('closed', () => {
+    settingsWindow = null
+  })
 }
 
+// IPC Handlers for settings
 ipcMain.on('open-settings-window', () => {
   createsettingsWindow()
+})
+
+ipcMain.on('get-theme', (event) => {
+  event.returnValue = settings.theme
+})
+ipcMain.on('get-language', (event) => {
+  event.returnValue = settings.language
+})
+
+ipcMain.on('set-theme', (_, theme) => {
+  console.log('Theme changed:', theme)
+  settings.theme = theme
+  mainWindow?.webContents.send('theme-changed', theme)
+  settingsWindow?.webContents.send('theme-changed', theme)
+})
+
+ipcMain.on('set-language', (_, lang) => {
+  console.log('Language changed:', lang)
+  settings.language = lang
+  mainWindow?.webContents.send('language-changed', lang)
+  settingsWindow?.webContents.send('language-changed', lang)
 })
 
 // This method will be called when Electron has finished
