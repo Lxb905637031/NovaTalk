@@ -70,6 +70,39 @@ ipcMain.on('get-language', (event) => {
   event.returnValue = settings.language
 })
 
+let currentModels: string[] = []
+let currentSelectedModel = ''
+let currentServices: any[] = []
+
+ipcMain.on('get-models', (event) => {
+  event.returnValue = currentModels
+})
+
+ipcMain.on('get-selected-model', (event) => {
+  event.returnValue = currentSelectedModel
+})
+
+ipcMain.on('get-services', (event) => {
+  event.returnValue = currentServices
+})
+
+ipcMain.on('update-models', (_, models) => {
+  console.log('Models updated:', models)
+  currentModels = models
+  mainWindow?.webContents.send('models-changed', models)
+})
+
+ipcMain.on('update-selected-model', (_, model) => {
+  console.log('Selected model updated:', model)
+  currentSelectedModel = model
+  mainWindow?.webContents.send('selected-model-changed', model)
+})
+
+ipcMain.on('update-services', (_, services) => {
+  console.log('Services updated:', services)
+  currentServices = services
+})
+
 ipcMain.on('set-theme', (_, theme) => {
   console.log('Theme changed:', theme)
   settings.theme = theme

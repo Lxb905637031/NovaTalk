@@ -8,7 +8,7 @@ import { toggleTheme } from '@/lib/theme'
 
 function App() {
   const { i18n } = useTranslation()
-  const { setTheme } = useStore()
+  const { setTheme, setModels, setSelectedModel } = useStore()
 
   useEffect(() => {
     const currentTheme = window.electronAPI?.getTheme?.()
@@ -22,6 +22,16 @@ function App() {
       i18n.changeLanguage(currentLang)
     }
 
+    const currentModels = window.electronAPI?.getModels?.()
+    if (currentModels) {
+      setModels(currentModels)
+    }
+
+    const currentSelectedModel = window.electronAPI?.getSelectedModel?.()
+    if (currentSelectedModel) {
+      setSelectedModel(currentSelectedModel)
+    }
+
     window.electronAPI?.onThemeChange?.((newTheme: string) => {
       setTheme(newTheme as Theme)
       toggleTheme(newTheme as Theme)
@@ -30,7 +40,15 @@ function App() {
     window.electronAPI?.onLanguageChange?.((lang: string) => {
       i18n.changeLanguage(lang)
     })
-  }, [setTheme, i18n])
+
+    window.electronAPI?.onModelsChange?.((newModels: string[]) => {
+      setModels(newModels)
+    })
+
+    window.electronAPI?.onSelectedModelChange?.((model: string) => {
+      setSelectedModel(model)
+    })
+  }, [setTheme, i18n, setModels, setSelectedModel])
 
   const handleSettingsClick = () => {
     window.electronAPI?.openSettingsWindow?.()

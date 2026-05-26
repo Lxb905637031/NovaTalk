@@ -45,6 +45,7 @@ export const zhCN = {
     apiUrl: 'API 地址',
     pleaseInput: '请输入',
     models: '模型',
+    pleaseFillApiInfo: '请先填写API Key和API地址',
   },
   common: {
     cancel: '取消',

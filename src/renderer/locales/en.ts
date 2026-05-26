@@ -45,6 +45,7 @@ export const enUS = {
     apiUrl: 'API URL',
     pleaseInput: 'Please Input',
     models: 'Models',
+    pleaseFillApiInfo: 'Please fill in API Key and API URL first',
   },
   common: {
     cancel: 'Cancel',
