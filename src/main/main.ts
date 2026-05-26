@@ -101,6 +101,7 @@ ipcMain.on('update-selected-model', (_, model) => {
 ipcMain.on('update-services', (_, services) => {
   console.log('Services updated:', services)
   currentServices = services
+  mainWindow?.webContents.send('services-changed', services)
 })
 
 ipcMain.on('set-theme', (_, theme) => {

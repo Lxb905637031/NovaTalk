@@ -13,14 +13,17 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      'flex h-11 w-full items-center justify-between rounded-lg border border-input bg-background px-3 py-2 text-sm font-medium ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+      'flex h-11 w-full items-center justify-between rounded-lg border border-input bg-background px-3 py-2 text-sm font-medium ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden whitespace-nowrap',
       className
     )}
     {...props}
+    style={{ whiteSpace: 'nowrap' }}
   >
-    {children}
+    <div className="flex-1 min-w-0 overflow-hidden whitespace-nowrap" style={{ whiteSpace: 'nowrap' }}>
+      {children}
+    </div>
     <SelectPrimitive.Icon asChild>
-      <ChevronDown className="h-4 w-4 opacity-50" />
+      <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0" />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ))
@@ -32,7 +35,8 @@ const SelectValue = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.Value
     ref={ref}
-    className={cn('text-sm', className)}
+    className={cn('block w-full truncate text-sm whitespace-nowrap', className)}
+    style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}
     {...props}
   />
 ))
@@ -91,7 +95,7 @@ const SelectItem = React.forwardRef<
     )}
     {...props}
   >
-    <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+    <SelectPrimitive.ItemText className="truncate">{children}</SelectPrimitive.ItemText>
     <SelectPrimitive.ItemIndicator className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
       <Check className="h-3 w-3" />
     </SelectPrimitive.ItemIndicator>

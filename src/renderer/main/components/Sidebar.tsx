@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Search, Plus, Sun, Moon, Settings, MessageSquare } from 'lucide-react'
 import { useSettingsStore } from '@/store'
-import { Theme } from '@/types/settings'
+import { ChatItem, Theme } from '@/types/settings'
 import { toggleTheme } from '@/lib/theme'
 
 interface SidebarProps {
@@ -14,15 +14,15 @@ function Sidebar({ onSettingsClick }: SidebarProps) {
   const { chats, currentChatId, setCurrentChat, addChat, theme, setTheme } = useSettingsStore()
   const [searchQuery, setSearchQuery] = useState('')
 
-  const todayChats = chats.filter((_, index) => index === 0)
-  const earlierChats = chats.filter((_, index) => index > 0)
+  const todayChats = chats.filter((_: any, index: number) => index === 0)
+  const earlierChats = chats.filter((_: any, index: number) => index > 0)
 
   const handleNewChat = () => {
     addChat(t('sidebar.newChat'))
   }
 
   const filteredChats = chats.filter(
-    (chat) =>
+    (chat: ChatItem) =>
       chat.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       chat.preview.toLowerCase().includes(searchQuery.toLowerCase())
   )
@@ -56,7 +56,7 @@ function Sidebar({ onSettingsClick }: SidebarProps) {
       <div className="flex-1 overflow-y-auto px-2">
         {searchQuery ? (
           <div className="space-y-1">
-            {filteredChats.map((chat) => (
+            {filteredChats.map((chat: ChatItem) => (
               <button
                 key={chat.id}
                 onClick={() => setCurrentChat(chat.id)}
@@ -100,7 +100,7 @@ function Sidebar({ onSettingsClick }: SidebarProps) {
                   {t('sidebar.today')}
                 </p>
                 <div className="space-y-1">
-                  {todayChats.map((chat) => (
+                  {todayChats.map((chat: ChatItem) => (
                     <button
                       key={chat.id}
                       onClick={() => setCurrentChat(chat.id)}
@@ -145,7 +145,7 @@ function Sidebar({ onSettingsClick }: SidebarProps) {
                   {t('sidebar.earlier')}
                 </p>
                 <div className="space-y-1">
-                  {earlierChats.map((chat) => (
+                  {earlierChats.map((chat: ChatItem) => (
                     <button
                       key={chat.id}
                       onClick={() => setCurrentChat(chat.id)}

@@ -1,19 +1,108 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Send } from 'lucide-react'
 import { useSettingsStore } from '@/store'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { chatCompletion } from '@/api/openai'
+import { AIService, ChatItem } from '@/types'
+
+interface Message {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+}
 
 function ChatArea() {
   const { t } = useTranslation()
-  const { currentChatId, chats, selectedModel , setSelectedModel, models } = useSettingsStore()  
+  const { currentChatId, chats, selectedModel, setSelectedModel, models, services, addChat, addMessage, updateMessage } = useSettingsStore()
   const [inputValue, setInputValue] = useState('')
+  const [messages, setMessages] = useState<Message[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [hasReceivedFirstChunk, setHasReceivedFirstChunk] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const currentChat = chats.find((chat) => chat.id === currentChatId)
+  const currentChat = chats.find((chat: ChatItem) => chat.id === currentChatId)
 
-  const handleSend = () => {
-    if (!inputValue.trim()) return
+  const getServiceForModel = (model: string) => {
+    return services.find((s: AIService) => s.enabled && s.models.includes(model))
+  }
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  useEffect(() => {
+    if (currentChat && currentChat.messages) {
+      setMessages(currentChat.messages as Message[])
+    } else {
+      setMessages([])
+    }
+  }, [currentChatId, currentChat])
+
+  const handleSend = async () => {
+    if (!inputValue.trim() || !selectedModel || isLoading) return
+
+    let chatId = currentChatId
+
+    if (!currentChat) {
+      addChat(inputValue.trim().substring(0, 30))
+      const newChats = useSettingsStore.getState().chats
+      chatId = newChats[0].id
+    }
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: inputValue.trim(),
+    }
+
+    addMessage(chatId, userMessage)
+
+    const service = getServiceForModel(selectedModel)
+    if (!service) {
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: t('chat.noService'),
+      }
+      addMessage(chatId, errorMessage)
+      setInputValue('')
+      return
+    }
+
+    const chatMessages = messages.map((m) => ({
+      role: m.role,
+      content: m.content,
+    }))
+    chatMessages.push({ role: 'user', content: userMessage.content })
+
+    const assistantMessageId = `${Date.now()}-assistant`
+    const assistantMessage: Message = {
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '',
+    }
+    addMessage(chatId, assistantMessage)
+
     setInputValue('')
+    setIsLoading(true)
+    setHasReceivedFirstChunk(false)
+
+    try {
+      await chatCompletion(
+        service,
+        selectedModel,
+        chatMessages,
+        (content: string) => {
+          setHasReceivedFirstChunk(true)
+          updateMessage(chatId, assistantMessageId, content)
+        }
+      )
+    } catch (error) {
+      updateMessage(chatId, assistantMessageId, t('chat.error') + ': ' + (error as Error).message)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -82,8 +171,8 @@ function ChatArea() {
                 className="flex-1 px-4 py-3 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-purple-200"
                 style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--color-foreground)' }}
               />
-              <Select 
-                value={selectedModel} 
+              <Select
+                value={selectedModel}
                 onValueChange={(value) => {
                   if (value === 'add-model') {
                     window.electronAPI?.openSettingsWindow?.()
@@ -92,14 +181,14 @@ function ChatArea() {
                   }
                 }}
               >
-                <SelectTrigger className="w-[140px] h-11" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--color-foreground)' }}>
+                <SelectTrigger className="w-[140px] h-11 overflow-hidden" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--color-foreground)' }}>
                   <SelectValue placeholder={t('chat.selectModel')} />
                 </SelectTrigger>
                 <SelectContent style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}>
                   {models.length === 0 ? (
-                    <SelectItem 
-                      key="add-model" 
-                      value="add-model" 
+                    <SelectItem
+                      key="add-model"
+                      value="add-model"
                       style={{ color: 'var(--color-foreground)' }}
                     >
                       {t('chat.noModels')}
@@ -115,9 +204,9 @@ function ChatArea() {
               </Select>
               <button
                 onClick={handleSend}
-                disabled={!inputValue.trim()}
+                disabled={!inputValue.trim() || isLoading}
                 className={`p-3 rounded-lg transition-all ${
-                  inputValue.trim()
+                  inputValue.trim() && !isLoading
                     ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:from-purple-600 hover:to-purple-700'
                     : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 }`}
@@ -144,6 +233,47 @@ function ChatArea() {
               <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>{t('chat.aiTitle')}</p>
             </div>
           </div>
+
+          {messages.map((message, index) => (
+            <div
+              key={message.id}
+              className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
+            >
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  message.role === 'user'
+                    ? 'bg-gradient-to-r from-purple-500 to-purple-600'
+                    : 'bg-gray-200'
+                }`}
+              >
+                <span className="text-white font-semibold text-sm">
+                  {message.role === 'user' ? t('chat.userName')[0] : t('chat.aiName')[0]}
+                </span>
+              </div>
+              <div
+                className={`max-w-[70%] p-4 rounded-2xl ${
+                  message.role === 'user'
+                    ? 'rounded-br-md bg-gradient-to-r from-purple-500 to-purple-600 text-white'
+                    : 'rounded-bl-md'
+                }`}
+                style={
+                  message.role === 'assistant'
+                    ? { backgroundColor: 'var(--color-card)', color: 'var(--color-foreground)' }
+                    : {}
+                }
+              >
+                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                {message.role === 'assistant' && index === messages.length - 1 && isLoading && !hasReceivedFirstChunk && (
+                  <div className="flex gap-1 mt-2">
+                    <span className="inline-block w-2 h-2 rounded-full bg-purple-500 animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="inline-block w-2 h-2 rounded-full bg-purple-500 animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="inline-block w-2 h-2 rounded-full bg-purple-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+          <div ref={messagesEndRef} />
         </div>
       </div>
 
@@ -159,23 +289,42 @@ function ChatArea() {
               className="flex-1 px-4 py-3 rounded-lg border-none focus:outline-none focus:ring-2 focus:ring-purple-200"
               style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--color-foreground)' }}
             />
-            <Select value={selectedModel} onValueChange={setSelectedModel}>
-              <SelectTrigger className="w-[140px] h-11" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--color-foreground)' }}>
+            <Select
+              value={selectedModel}
+              onValueChange={(value) => {
+                if (value === 'add-model') {
+                  window.electronAPI?.openSettingsWindow?.()
+                } else {
+                  setSelectedModel(value)
+                }
+              }}
+            >
+              <SelectTrigger className="w-[140px] h-11 overflow-hidden" style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--color-foreground)' }}>
                 <SelectValue placeholder={t('chat.selectModel')} />
               </SelectTrigger>
               <SelectContent style={{ backgroundColor: 'var(--color-card)', borderColor: 'var(--color-border)' }}>
-                {models.map((model) => (
-                  <SelectItem key={model} value={model} style={{ color: 'var(--color-foreground)' }}>
-                    {model}
+                {models.length === 0 ? (
+                  <SelectItem
+                    key="add-model"
+                    value="add-model"
+                    style={{ color: 'var(--color-foreground)' }}
+                  >
+                    {t('chat.noModels')}
                   </SelectItem>
-                ))}
+                ) : (
+                  models.map((model) => (
+                    <SelectItem key={model} value={model} style={{ color: 'var(--color-foreground)' }}>
+                      {model}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
             <button
               onClick={handleSend}
-              disabled={!inputValue.trim()}
+              disabled={!inputValue.trim() || isLoading}
               className={`p-3 rounded-lg transition-all ${
-                inputValue.trim()
+                inputValue.trim() && !isLoading
                   ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:from-purple-600 hover:to-purple-700'
                   : 'bg-gray-100 text-gray-400 cursor-not-allowed'
               }`}

@@ -45,4 +45,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onSelectedModelChange: (callback: (model: string) => void) => {
     ipcRenderer.on('selected-model-changed', (_, model) => callback(model))
   },
+  onServicesChange: (callback: (services: any[]) => void) => {
+    ipcRenderer.on('services-changed', (_, services) => callback(services))
+  },
 })

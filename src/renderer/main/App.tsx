@@ -2,13 +2,13 @@ import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import Sidebar from './components/Sidebar'
 import ChatArea from './components/ChatArea'
-import useStore from '@/store/useSettingsStore'
+import { useSettingsStore } from '@/store'
 import { Theme } from '@/types/settings'
 import { toggleTheme } from '@/lib/theme'
 
 function App() {
   const { i18n } = useTranslation()
-  const { setTheme, setModels, setSelectedModel } = useStore()
+  const { setTheme, setModels, setSelectedModel, setServices } = useSettingsStore()
 
   useEffect(() => {
     const currentTheme = window.electronAPI?.getTheme?.()
@@ -32,6 +32,11 @@ function App() {
       setSelectedModel(currentSelectedModel)
     }
 
+    const currentServices = window.electronAPI?.getServices?.()
+    if (currentServices) {
+      setServices(currentServices)
+    }
+
     window.electronAPI?.onThemeChange?.((newTheme: string) => {
       setTheme(newTheme as Theme)
       toggleTheme(newTheme as Theme)
@@ -48,7 +53,11 @@ function App() {
     window.electronAPI?.onSelectedModelChange?.((model: string) => {
       setSelectedModel(model)
     })
-  }, [setTheme, i18n, setModels, setSelectedModel])
+
+    window.electronAPI?.onServicesChange?.((services: any[]) => {
+      setServices(services)
+    })
+  }, [setTheme, i18n, setModels, setSelectedModel, setServices])
 
   const handleSettingsClick = () => {
     window.electronAPI?.openSettingsWindow?.()

@@ -8,11 +8,18 @@ enum Language {
   En = 'en-US',
 }
 
+interface ChatMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+}
+
 interface ChatItem {
   id: string
   title: string
   time: string
   preview: string
+  messages: ChatMessage[]
 }
 
 interface AIService {
@@ -31,7 +38,7 @@ export const defaultServices: AIService[] = [
     enabled: false,
     apiKey: '',
     apiBaseUrl: 'https://open.bigmodel.cn/api/paas/v4',
-    models: ['glm-4-5-flash'],
+    models: ['glm-4-flash'],
   },
   {
     id: 'deepseek',
@@ -47,15 +54,15 @@ export const defaultServices: AIService[] = [
     enabled: false,
     apiKey: '',
     apiBaseUrl: 'https://api.siliconflow.cn/v1',
-    models: ['Qwen/Qwen3-8B', 'deepseek-ai/DeepSeek-R1-0528-Qwen-8B'],
+    models: ['Qwen/Qwen3-8B'],
   },
   {
     id: 'baidu',
     name: '百度千帆',
     enabled: false,
     apiKey: '',
-    apiBaseUrl: 'https://qianfan.baidu.com/v2',
-    models: ['ernie-speed-128k', 'ernie-4.0-8k', 'ernie-3.5-8k'],
+    apiBaseUrl: 'https://qianfan.baidubce.com/v2',
+    models: ['ernie-4.0-8k', 'ernie-3.5-8k'],
   },
 ]
 
@@ -89,5 +96,6 @@ export {
 export type {
   ChatState,
   ChatItem,
-  AIService
+  AIService,
+  ChatMessage
 }

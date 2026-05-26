@@ -32,6 +32,7 @@ interface ElectronAPI {
   onSettingsChange: (callback: (settings: { theme?: string; notifications?: boolean; autoSave?: boolean; language?: string }) => void) => void
   onModelsChange: (callback: (models: string[]) => void) => void
   onSelectedModelChange: (callback: (model: string) => void) => void
+  onServicesChange: (callback: (services: any[]) => void) => void
 }
 
 declare global {

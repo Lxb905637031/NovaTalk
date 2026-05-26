@@ -21,6 +21,9 @@ export const zhCN = {
     aiName: '诺瓦托克',
     aiTitle: 'AI 助手',
     noModels: '暂无模型，请前往设置添加',
+    noService: '未找到可用的服务，请在设置中启用并配置服务',
+    error: '请求失败，请检查网络连接或API配置',
+    userName: '我',
   },
   settings: {
     title: '设置',

@@ -21,6 +21,9 @@ export const enUS = {
     aiName: 'NovaTalk',
     aiTitle: 'AI Assistant',
     noModels: 'No models, go to settings to add',
+    noService: 'No available service, please enable and configure in settings',
+    error: 'Request failed, please check network connection or API configuration',
+    userName: 'Me',
   },
   settings: {
     title: 'Settings',

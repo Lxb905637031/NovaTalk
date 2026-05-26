@@ -3,7 +3,7 @@ import { useLayoutEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSettingsStore } from '@/store'
 
-import { Theme, Language } from '@/types/settings'
+import { Theme, Language, AIService } from '@/types/settings'
 import { toggleTheme } from '@/lib/theme'
 import { Moon, Sun, ChevronDown, ChevronRight } from 'lucide-react'
 import {
@@ -91,7 +91,7 @@ function Settings() {
   }
 
   const handleServiceToggle = (serviceId: string) => {
-    const service = services.find((s) => s.id === serviceId)
+    const service = services.find((s: AIService) => s.id === serviceId)
     if (!service) return
 
     if (!service.enabled) {
@@ -202,7 +202,7 @@ function Settings() {
                 </SelectTrigger>
                 <SelectContent className="rounded-lg border border-border bg-popover text-popover-foreground shadow-lg" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-card)', color: 'var(--color-foreground)' }}>
                   {models.length > 0 ? (
-                    models.map((model) => (
+                    models.map((model: string) => (
                       <SelectItem key={model} value={model} className="px-3 py-2.5 text-sm hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground" style={{ color: 'var(--color-foreground)' }}>
                         {model}
                       </SelectItem>
@@ -218,7 +218,7 @@ function Settings() {
           </div>
 
           <div className="space-y-3">
-            {services.map((service) => (
+            {services.map((service: AIService) => (
               <div key={service.id} className="rounded-lg overflow-hidden" style={{ borderColor: 'var(--color-border)', borderWidth: '1px', borderStyle: 'solid' }}>
                 <div
                   onClick={() => setExpandedService(expandedService === service.id ? null : service.id)}
@@ -232,7 +232,7 @@ function Settings() {
                     <span className="text-sm font-medium">{service.name}</span>
                   </div>
                   <div className="cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                    <Switch checked={service.enabled} onCheckedChange={(checked) => handleServiceToggle(service.id)} />
+                    <Switch checked={service.enabled} onCheckedChange={() => handleServiceToggle(service.id)} />
                   </div>
                 </div>
 
@@ -244,6 +244,7 @@ function Settings() {
                       </label>
                       <div className="flex-1">
                         <Input
+                          type="password"
                           placeholder={t('settings.pleaseInput')}
                           value={service.apiKey}
                           onChange={(e) => handleApiKeyChange(service.id, e.target.value)}
@@ -264,6 +265,23 @@ function Settings() {
                           className="text-sm"
                           style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-secondary)', color: 'var(--color-foreground)' }}
                         />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <label className="text-xs flex-shrink-0 h-9 flex items-center" style={{ color: 'var(--color-muted-foreground)' }}>
+                        {t('settings.models')}
+                      </label>
+                      <div className="flex-1 flex flex-wrap gap-2 items-center">
+                        {service.models.map((model, index) => (
+                          <span
+                            key={index}
+                            className="px-2 py-1 text-xs rounded-full"
+                            style={{ backgroundColor: 'var(--color-secondary)', color: 'var(--color-foreground)' }}
+                          >
+                            {model}
+                          </span>
+                        ))}
                       </div>
                     </div>
                   </div>
