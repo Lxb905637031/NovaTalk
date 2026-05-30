@@ -1,116 +1,23 @@
-import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Send } from 'lucide-react'
 import { useSettingsStore } from '@/store'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { chatCompletion } from '@/api/openai'
-import { AIService, ChatItem } from '@/types'
-
-interface Message {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
-}
+import { useChatInput } from '@/hooks'
 
 function ChatArea() {
   const { t } = useTranslation()
-  const { currentChatId, chats, selectedModel, setSelectedModel, models, services, addChat, addMessage, updateMessage } = useSettingsStore()
-  const [inputValue, setInputValue] = useState('')
-  const [messages, setMessages] = useState<Message[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [hasReceivedFirstChunk, setHasReceivedFirstChunk] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-
-  const currentChat = chats.find((chat: ChatItem) => chat.id === currentChatId)
-
-  const getServiceForModel = (model: string) => {
-    return services.find((s: AIService) => s.enabled && s.models.includes(model))
-  }
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
-
-  useEffect(() => {
-    if (currentChat && currentChat.messages) {
-      setMessages(currentChat.messages as Message[])
-    } else {
-      setMessages([])
-    }
-  }, [currentChatId, currentChat])
-
-  const handleSend = async () => {
-    if (!inputValue.trim() || !selectedModel || isLoading) return
-
-    let chatId = currentChatId
-
-    if (!currentChat) {
-      addChat(inputValue.trim().substring(0, 30))
-      const newChats = useSettingsStore.getState().chats
-      chatId = newChats[0].id
-    }
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: inputValue.trim(),
-    }
-
-    addMessage(chatId, userMessage)
-
-    const service = getServiceForModel(selectedModel)
-    if (!service) {
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: t('chat.noService'),
-      }
-      addMessage(chatId, errorMessage)
-      setInputValue('')
-      return
-    }
-
-    const chatMessages = messages.map((m) => ({
-      role: m.role,
-      content: m.content,
-    }))
-    chatMessages.push({ role: 'user', content: userMessage.content })
-
-    const assistantMessageId = `${Date.now()}-assistant`
-    const assistantMessage: Message = {
-      id: assistantMessageId,
-      role: 'assistant',
-      content: '',
-    }
-    addMessage(chatId, assistantMessage)
-
-    setInputValue('')
-    setIsLoading(true)
-    setHasReceivedFirstChunk(false)
-
-    try {
-      await chatCompletion(
-        service,
-        selectedModel,
-        chatMessages,
-        (content: string) => {
-          setHasReceivedFirstChunk(true)
-          updateMessage(chatId, assistantMessageId, content)
-        }
-      )
-    } catch (error) {
-      updateMessage(chatId, assistantMessageId, t('chat.error') + ': ' + (error as Error).message)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSend()
-    }
-  }
+  const { currentChatId, selectedModel, setSelectedModel, models } = useSettingsStore()
+  const {
+    inputValue,
+    setInputValue,
+    messages,
+    isLoading,
+    hasReceivedFirstChunk,
+    messagesEndRef,
+    handleSend,
+    handleKeyPress,
+    currentChat,
+  } = useChatInput({ currentChatId })
 
   if (!currentChat) {
     return (
